@@ -1,5 +1,6 @@
 {
-  "hcmc":      {"label": "Ho Chi Minh City",                    "tile": "h28v07", "lon_min": 106.35, "lat_min": 10.55, "lon_max": 107.00, "lat_max": 11.15},
-  "hanoi":     {"label": "Hanoi",                               "tile": "h28v06", "lon_min": 105.55, "lat_min": 20.80, "lon_max": 106.10, "lat_max": 21.30},
-  "binhthuan": {"label": "Binh Thuan dragon fruit farms",       "tile": "h28v07", "lon_min": 107.70, "lat_min": 10.75, "lon_max": 108.30, "lat_max": 11.30}
+  "hcmc":        {"label": "Ho Chi Minh City",                  "tile": "h28v07", "lon_min": 106.35, "lat_min": 10.55, "lon_max": 107.00, "lat_max": 11.15},
+  "hanoi":       {"label": "Hanoi",                             "tile": "h28v06", "lon_min": 105.55, "lat_min": 20.80, "lon_max": 106.10, "lat_max": 21.30},
+  "binhthuan":   {"label": "Binh Thuan dragon fruit farms",     "tile": "h28v07", "lon_min": 107.70, "lat_min": 10.75, "lon_max": 108.30, "lat_max": 11.30},
+  "hamthuanbac": {"label": "Ham Thuan Bac dragon fruit belt",   "tile": "h28v07", "lon_min": 108.00, "lat_min": 10.93, "lon_max": 108.20, "lat_max": 11.10}
 }

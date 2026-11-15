@@ -131,7 +131,7 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
         <tr><td><b>More efficient bulbs</b></td><td>Farmers moved from 60 W incandescent to compact bulbs (~60% less power, reported 2017)<sup>6</sup>; a 2021–2023 project replaced compact bulbs with 80,000 9 W LEDs (~50% less power)<sup>5</sup>.</td><td>Partly: dimmer, bluer bulbs look darker to VIIRS even where fields are still lit.</td></tr>
       </tbody>
     </table></div>
-    <p class="muted"><b>Our reading:</b> brightness fell more than farmland area (−35% vs −17%), which fits a mix of fewer fields, less off-season lighting while prices were low, and more efficient bulbs. Separating these causes needs field data (lighting hours, bulb types per farm).</p>
+    <p class="muted"><b>Our reading:</b> brightness fell more than farmland area (−35% vs −17%), which fits a mix of fewer fields, less off-season lighting while prices were low, and more efficient bulbs. In the Ham Thuan Bac belt, the only area of central and southern Vietnam where brightness fell significantly, the lit area stayed flat (77% to 84%) while brightness fell from 105 to 61 nW/cm²/sr: fields stayed lit but got dimmer, which fits the bulb change better than abandoned fields. Separating these causes needs field data (lighting hours, bulb types per farm).</p>
     <p class="muted" style="font-size:13px">Sources: <sup>1</sup> <a href="https://ideas.repec.org/a/taf/raagxx/v112y2022i4p1139-1158.html">Krauser et al. (2022), Annals of the American Association of Geographers 112(4)</a> · <sup>2</sup> <a href="https://vietnamnews.vn/economy/1166919/binh-thuan-province-farmers-cut-down-dragon-fruit-trees-on-losing-china-market.html">Viet Nam News, 24 Mar 2022</a> · <sup>3</sup> <a href="https://bnews.vn/dien-tich-thanh-long-binh-thuan-giam-gan-1-000-ha/238583.html">Bnews, 30 Mar 2022</a> · <sup>4</sup> <a href="https://www.sggp.org.vn/thu-phu-thanh-long-tim-huong-di-ben-vung-post679374.html">SGGP, 20 Feb 2023</a> · <sup>5</sup> <a href="https://tietkiemnangluong.com.vn/tin-tuc/pho-bien-kien-thuc/t31787/giam-den-50-dien-nang-khi-su-dung-den-led-kich-thich-thanh-long-trai-vu">Tiet kiem nang luong, 17 Oct 2024</a> · <sup>6</sup> <a href="https://rangdong.com.vn/rang-dong-sang-ruc-39-thu-phu-39-thanh-long-n259.html">Rang Dong, 27 Dec 2017</a></p>
   </section>
 
@@ -213,6 +213,8 @@ const CASES = [
    text:'Since 2019 brightness fell sharply (note the drop in 2022), but with only 7 years the decline is not yet significant. Scroll to "Beyond the satellite": the 2022 drop matches a documented price collapse, a 17% loss of dragon fruit farmland and a switch to efficient bulbs. Satellite data alone cannot prove the cause.'},
   {title:'Case 9: Opposite trends, one region', region:'binhthuan', v:'core',
    text:'The brightest farm areas of 2012 got significantly dimmer, while areas that were dark got significantly brighter. Switch the variable to "areas that were dark" and compare, then look at the blue and red patches on the map.'},
+  {title:'Case 10: A place getting darker', region:'hamthuanbac', v:'mean_radiance',
+   text:'We scanned every 0.1° cell of central and southern Vietnam (10–20°N). Only three cells dimmed significantly, all in the Ham Thuan Bac dragon fruit belt. Brightness fell by about 5% per year, yet switch the variable to "lit area": the lit area did not shrink. Fields stayed lit but got dimmer.'},
 ];
 
 function renderCases(){

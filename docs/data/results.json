@@ -463,6 +463,160 @@
      "percent_change_per_year": 7.726196281375561
     }
    }
+  },
+  "hamthuanbac": {
+   "label": "Ham Thuan Bac dragon fruit belt",
+   "bbox": [
+    108.0,
+    10.93,
+    108.2,
+    11.1
+   ],
+   "years": [
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+   ],
+   "mean_radiance": [
+    104.631,
+    129.36,
+    140.9,
+    161.537,
+    131.951,
+    123.436,
+    154.268,
+    155.108,
+    111.635,
+    102.106,
+    58.224,
+    64.324,
+    63.504,
+    60.775
+   ],
+   "trend": "decreasing",
+   "p_value": 0.021488739119677414,
+   "significant": true,
+   "sen_slope_per_year": -5.968991088867187,
+   "percent_change_per_year": -5.35075789995833,
+   "pixels_brightening_pct": 5.973120955699353,
+   "pixels_dimming_pct": 37.23245395719263,
+   "variables": {
+    "mean_radiance": {
+     "label": "Average night-time brightness",
+     "unit": "nW/cm\u00b2/sr",
+     "desc": "Mean radiance of all pixels in the region.",
+     "values": [
+      104.6306,
+      129.3603,
+      140.9003,
+      161.5366,
+      131.9507,
+      123.4356,
+      154.2681,
+      155.1084,
+      111.6355,
+      102.1058,
+      58.2237,
+      64.3235,
+      63.5036,
+      60.775
+     ],
+     "trend": "decreasing",
+     "p_value": 0.021488739119677414,
+     "significant": true,
+     "sen_slope_per_year": -5.968991088867187,
+     "percent_change_per_year": -5.35075789995833
+    },
+    "lit_area": {
+     "label": "Lit area",
+     "unit": "% of region",
+     "desc": "Share of pixels brighter than 5.0 nW/cm\u00b2/sr: a proxy for how far lights spread (urban sprawl).",
+     "values": [
+      77.3021,
+      91.6874,
+      92.7327,
+      96.217,
+      96.8143,
+      93.4793,
+      98.8552,
+      97.9592,
+      94.4749,
+      91.9363,
+      82.1304,
+      87.6058,
+      85.3161,
+      83.5241
+     ],
+     "trend": "no trend",
+     "p_value": 0.4434214028640828,
+     "significant": false,
+     "sen_slope_per_year": -0.6802721088435378,
+     "percent_change_per_year": -0.7498856881572937
+    },
+    "core": {
+     "label": "Brightness of established bright areas",
+     "unit": "nW/cm\u00b2/sr",
+     "desc": "Mean radiance of pixels that were already in the brightest 10% in 2012 (old centres, ports, industry).",
+     "values": [
+      440.3408,
+      503.2948,
+      487.4005,
+      515.8495,
+      383.4167,
+      337.2966,
+      395.4857,
+      401.6368,
+      324.2208,
+      286.8061,
+      164.2567,
+      192.5392,
+      196.9722,
+      184.5136
+     ],
+     "trend": "decreasing",
+     "p_value": 0.0006883363149532418,
+     "significant": true,
+     "sen_slope_per_year": -27.53517705743963,
+     "percent_change_per_year": -8.00768765946955
+    },
+    "fringe": {
+     "label": "Brightness of areas that were dark",
+     "unit": "nW/cm\u00b2/sr",
+     "desc": "Mean radiance of pixels that were in the darkest 50% in 2012 (rural land, new suburbs, sea).",
+     "values": [
+      11.8297,
+      21.2355,
+      26.1772,
+      35.3864,
+      36.1413,
+      37.2924,
+      49.9673,
+      48.8825,
+      36.6784,
+      32.4334,
+      20.096,
+      21.8378,
+      20.5927,
+      20.6137
+     ],
+     "trend": "no trend",
+     "p_value": 0.9128140271840748,
+     "significant": false,
+     "sen_slope_per_year": -0.058440988714044746,
+     "percent_change_per_year": -0.19519170379318396
+    }
+   }
   }
  }
 }
