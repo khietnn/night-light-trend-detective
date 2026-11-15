@@ -308,7 +308,7 @@ function update(){
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const N = 16, G = 0.45, DAMP = 0.992, ITER = 24, SUN_INV_MASS = 0.15;
   let W = 0, H = 0, HH = 0, seg = 10, ax = 0, R = 20, pts = [], stars = [], off = false, drag = null, visible = true, t = 0;
-  let mix = 0, moved = 0, hover = false;
+  let mix = 0, moved = 0, hover = false, pendingOff = null, pendingFrames = 0;
 
   function layout() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2), narrow = hdr.clientWidth < 700;
@@ -357,7 +357,6 @@ function update(){
   }
 
   function draw() {
-    mix = reduce ? (off ? 1 : 0) : mix + ((off ? 1 : 0) - mix) * 0.07;
     ctx.clearRect(0, 0, W, H);
     if (mix > 0.01) for (const s of stars) {
       ctx.fillStyle = `rgba(255,255,255,${mix * (0.3 + 0.7 * Math.abs(Math.sin(t * 0.02 + s.p)))})`;
@@ -397,11 +396,26 @@ function update(){
     ctx.globalAlpha = 1;
   }
 
-  function setLights(state) {
-    off = state; hdr.classList.toggle('lights-off', off);
+  function applyLights(state) {
+    off = state; mix = off ? 1 : 0; hdr.classList.toggle('lights-off', off);
     btn.setAttribute('aria-pressed', off);
     btn.textContent = off ? "Pull the moon's cord: lights on" : "Pull the sun's cord: lights off";
-    if (reduce) draw();
+  }
+
+  // Fling the body up past the top edge; the sun/moon swap happens only once it is out of sight.
+  function setLights(state) {
+    if (reduce) { applyLights(state); draw(); return; }
+    if (pendingOff !== null) return;
+    pendingOff = state; pendingFrames = 0;
+    const s = pts[N - 1], h = Math.max(s.y, 0) + R * 4.5;   // height it must climb to hide the glow too
+    const v = Math.sqrt(2 * G * h) * 1.5;                      // v = sqrt(2gh), with margin for damping
+    const kick = (Math.random() - 0.5) * 3;
+    // The rope is heavier than the sun, so the whole rope gets the upward kick, scaled by distance
+    // from the anchor; otherwise the sun would spend its energy hauling the rope and never leave the screen.
+    for (let i = 1; i < N; i++) {
+      const p = pts[i], f = i / (N - 1);
+      p.px = p.x + kick * f; p.py = p.y + v * f;              // Verlet velocity = position - previous
+    }
   }
 
   // Pointer handling on the window: the canvas ignores clicks, we only grab when the pointer is on the sun.
@@ -435,18 +449,22 @@ function update(){
   const release = () => {
     if (!drag) return;
     drag = null; document.body.style.cursor = hover ? 'grab' : ''; document.body.style.userSelect = '';
-    if (moved < 6) { setLights(!off); pts[N - 1].py -= 10; }         // a tap on the sun flips it
+    if (moved < 6) setLights(!off);                                  // a tap on the sun flips it
     else if (pts[N - 1].y > seg * (N - 1) + 22) setLights(!off);     // a downward pull works like a lamp cord
   };
   window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release);
 
-  btn.addEventListener('click', () => {
-    setLights(!off);
-    if (!reduce) pts[N - 1].py -= 14;
-  });
+  btn.addEventListener('click', () => setLights(!off));
 
   function loop() {
-    if (visible || drag) { step(); draw(); t++; }
+    if (visible || drag || pendingOff !== null) {
+      step();
+      if (pendingOff !== null && (pts[N - 1].y < -R * 3.6 || ++pendingFrames > 150)) {
+        if (pendingFrames > 150) console.warn('sun swap fallback: body did not leave the screen');
+        applyLights(pendingOff); pendingOff = null;           // swapped while out of view
+      }
+      draw(); t++;
+    }
     requestAnimationFrame(loop);
   }
 
