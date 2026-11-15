@@ -309,6 +309,7 @@ function update(){
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const N = 16, G = 0.45, DAMP = 0.992, ITER = 24, SUN_INV_MASS = 0.15;
   let W = 0, H = 0, seg = 10, ax = 0, R = 20, pts = [], stars = [], off = false, drag = null, visible = true, t = 0, lastW = -1;
+  let mix = 0, moved = 0;   // mix: 0 = sun, 1 = moon (eased); moved: pointer travel during a drag
 
   function layout() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -352,10 +353,17 @@ function update(){
     }
   }
 
+  function glowAt(x, y, rgb, a) {
+    const gr = ctx.createRadialGradient(x, y, R * 0.3, x, y, R * 3.4);
+    gr.addColorStop(0, `rgba(${rgb},${a})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, R * 3.4, 0, 6.283); ctx.fill();
+  }
+
   function draw() {
+    mix = reduce ? (off ? 1 : 0) : mix + ((off ? 1 : 0) - mix) * 0.07;
     ctx.clearRect(0, 0, W, H);
-    if (off) for (const s of stars) {
-      ctx.fillStyle = `rgba(255,255,255,${0.3 + 0.7 * Math.abs(Math.sin(t * 0.02 + s.p))})`;
+    if (mix > 0.01) for (const s of stars) {
+      ctx.fillStyle = `rgba(255,255,255,${mix * (0.3 + 0.7 * Math.abs(Math.sin(t * 0.02 + s.p)))})`;
       ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
     }
     ctx.strokeStyle = 'rgba(200,210,235,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
@@ -363,24 +371,42 @@ function update(){
       ctx.quadraticCurveTo(pts[i].x, pts[i].y, (pts[i].x + pts[i + 1].x) / 2, (pts[i].y + pts[i + 1].y) / 2);
     const s = pts[N - 1], q = pts[N - 2];
     ctx.lineTo(s.x, s.y); ctx.stroke();
-    const glow = off ? 0.2 : 1, ang = Math.atan2(q.x - s.x, s.y - q.y);
-    const gr = ctx.createRadialGradient(s.x, s.y, R * 0.3, s.x, s.y, R * 3.4);
-    gr.addColorStop(0, `rgba(255,214,102,${0.55 * glow})`); gr.addColorStop(1, 'rgba(255,214,102,0)');
-    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(s.x, s.y, R * 3.4, 0, 6.283); ctx.fill();
-    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(ang + t * 0.004);
-    ctx.strokeStyle = `rgba(255,200,80,${0.85 * glow})`; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
-    for (let k = 0; k < 12; k++) {
-      ctx.rotate(Math.PI / 6); ctx.beginPath();
-      ctx.moveTo(R * 1.25, 0); ctx.lineTo(R * (k % 2 ? 1.55 : 1.75), 0); ctx.stroke();
+    const ang = Math.atan2(q.x - s.x, s.y - q.y);
+
+    // sun (fades out as the lights go off)
+    if (mix < 0.99) {
+      ctx.globalAlpha = 1 - mix;
+      glowAt(s.x, s.y, '255,214,102', 0.55);
+      ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(ang + t * 0.004);
+      ctx.strokeStyle = 'rgba(255,200,80,.85)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+      for (let k = 0; k < 12; k++) {
+        ctx.rotate(Math.PI / 6); ctx.beginPath();
+        ctx.moveTo(R * 1.25, 0); ctx.lineTo(R * (k % 2 ? 1.55 : 1.75), 0); ctx.stroke();
+      }
+      ctx.restore();
+      ctx.fillStyle = '#f5b942'; ctx.beginPath(); ctx.arc(s.x, s.y, R, 0, 6.283); ctx.fill();
     }
-    ctx.restore();
-    ctx.fillStyle = off ? '#6b5f43' : '#f5b942'; ctx.beginPath(); ctx.arc(s.x, s.y, R, 0, 6.283); ctx.fill();
+    // crescent moon with craters (fades in), turning with the rope like the sun
+    if (mix > 0.01) {
+      ctx.globalAlpha = mix;
+      glowAt(s.x, s.y, '170,195,255', 0.35);
+      ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(ang);
+      ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fillStyle = '#e9edf7'; ctx.fill(); ctx.clip();
+      ctx.fillStyle = 'rgba(160,170,195,.55)';
+      for (const [cx, cy, cr] of [[-0.35, -0.3, 0.18], [-0.45, 0.25, 0.13], [-0.05, 0.5, 0.1]]) {
+        ctx.beginPath(); ctx.arc(cx * R, cy * R, cr * R, 0, 6.283); ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(7,11,28,.92)';                     // night side of the moon
+      ctx.beginPath(); ctx.arc(R * 0.55, -R * 0.2, R * 0.95, 0, 6.283); ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
   }
 
   function setLights(state) {
     off = state; hdr.classList.toggle('lights-off', off);
     btn.setAttribute('aria-pressed', off); note.hidden = !off;
-    btn.textContent = off ? "Pull the sun's cord: lights on" : "Pull the sun's cord: lights off";
+    btn.textContent = off ? "Pull the moon's cord: lights on" : "Pull the sun's cord: lights off";
     if (reduce) draw();
   }
 
@@ -389,11 +415,12 @@ function update(){
 
   cv.addEventListener('pointerdown', e => {
     if (reduce || !nearSun(pos(e))) return;
-    drag = pos(e); cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing';
+    drag = pos(e); moved = 0; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing';
   });
   cv.addEventListener('pointermove', e => {
     const p = pos(e);
     if (drag) {
+      moved += Math.hypot(p.x - drag.x, p.y - drag.y); drag = p;
       const s = pts[N - 1], maxL = seg * (N - 1) + 70;          // the cord can stretch a little, not forever
       let dx = p.x - ax, dy = Math.max(p.y, 0); const d = Math.hypot(dx, dy);
       if (d > maxL) { dx *= maxL / d; dy *= maxL / d; }
@@ -404,7 +431,8 @@ function update(){
   const release = () => {
     if (!drag) return;
     drag = null; cv.style.cursor = 'grab';
-    if (pts[N - 1].y > seg * (N - 1) + 45) setLights(!off);   // a hard downward pull works like a lamp cord
+    if (moved < 6) { setLights(!off); pts[N - 1].py -= 10; }         // a tap on the sun also flips it
+    else if (pts[N - 1].y > seg * (N - 1) + 22) setLights(!off);     // a downward pull works like a lamp cord
   };
   cv.addEventListener('pointerup', release); cv.addEventListener('pointercancel', release);
 
@@ -424,10 +452,15 @@ function update(){
     new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(hdr);
     requestAnimationFrame(loop);
   }
-  window.addEventListener('resize', () => {
-    if (hdr.clientWidth === lastW) return;
-    lastW = hdr.clientWidth; layout(); reset(true); if (reduce) draw();
-  });
+  let lastH = hdr.clientHeight;
+  new ResizeObserver(() => {
+    const w = hdr.clientWidth, h = hdr.clientHeight;
+    if (w === lastW && h === lastH) return;
+    const widthChanged = w !== lastW;
+    lastW = w; lastH = h; layout();
+    if (widthChanged) reset(true);          // a height change (the note appearing) keeps the rope where it is
+    if (reduce) draw();
+  }).observe(hdr);
   lastW = hdr.clientWidth;
 })();
 </script>
