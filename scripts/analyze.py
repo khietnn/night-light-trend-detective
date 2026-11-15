@@ -22,6 +22,7 @@ OUT = ROOT / "docs"
 REGIONS = json.loads((ROOT / "scripts" / "regions.json").read_text(encoding="utf-8"))
 ALPHA = 0.05
 UNIT = "nW/cm²/sr"
+LIT = 5.0  # radiance threshold for a "lit" pixel
 
 
 def pixel_trends(stack, years):
@@ -53,6 +54,31 @@ def main():
         stack = np.stack([np.load(CLIP / f"{key}_{y}.npy") for y in years])
         series = [float(np.nanmean(a)) for a in stack]
 
+        # Selectable variables derived from the same NASA layer
+        base = stack[0]
+        core = base >= np.nanpercentile(base, 90)      # already bright in first year
+        fringe = base <= np.nanpercentile(base, 50)    # dark in first year
+        variables = {
+            "mean_radiance": ("Average night-time brightness", UNIT, series,
+                              "Mean radiance of all pixels in the region."),
+            "lit_area": ("Lit area", "% of region",
+                         [float(np.nanmean(a >= LIT) * 100) for a in stack],
+                         f"Share of pixels brighter than {LIT} {UNIT}: a proxy for how far lights spread (urban sprawl)."),
+            "core": ("Brightness of established bright areas", UNIT,
+                     [float(np.nanmean(a[core])) for a in stack],
+                     f"Mean radiance of pixels that were already in the brightest 10% in {years[0]} (old centres, ports, industry)."),
+            "fringe": ("Brightness of areas that were dark", UNIT,
+                       [float(np.nanmean(a[fringe])) for a in stack],
+                       f"Mean radiance of pixels that were in the darkest 50% in {years[0]} (rural land, new suburbs, sea)."),
+        }
+        var_out = {}
+        for vk, (label, unit, vals, desc) in variables.items():
+            vt = mk.original_test(vals, alpha=ALPHA)
+            var_out[vk] = {"label": label, "unit": unit, "desc": desc, "values": [round(v, 4) for v in vals],
+                           "trend": vt.trend, "p_value": float(vt.p), "significant": bool(vt.h),
+                           "sen_slope_per_year": float(vt.slope),
+                           "percent_change_per_year": float(vt.slope / np.mean(vals) * 100) if np.mean(vals) else 0.0}
+
         t = mk.original_test(series, alpha=ALPHA)
         slope, p = pixel_trends(stack, years)
         valid = ~np.isnan(p)
@@ -70,6 +96,7 @@ def main():
             "percent_change_per_year": float(t.slope / np.mean(series) * 100),
             "pixels_brightening_pct": float(up.sum() / valid.sum() * 100),
             "pixels_dimming_pct": float(down.sum() / valid.sum() * 100),
+            "variables": var_out,
         }
 
         # time series + Sen's line
@@ -100,6 +127,9 @@ def main():
         print(f"{reg['label']}: {r['trend']}, p={r['p_value']:.4g}, slope={r['sen_slope_per_year']:+.4f}/yr "
               f"({r['percent_change_per_year']:+.2f}%/yr), up {r['pixels_brightening_pct']:.1f}% "
               f"down {r['pixels_dimming_pct']:.1f}% of pixels, n={len(years)}")
+        for vk, v in var_out.items():
+            print(f"   {vk:14s} {v['trend']:12s} p={v['p_value']:.3g} slope={v['sen_slope_per_year']:+.4f} "
+                  f"({v['percent_change_per_year']:+.2f}%/yr) first={v['values'][0]:.2f} last={v['values'][-1]:.2f}")
 
     (OUT / "data" / "results.json").write_text(json.dumps(results, indent=1), encoding="utf-8")
 

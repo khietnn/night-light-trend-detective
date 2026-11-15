@@ -2,7 +2,7 @@
 
 **Team offByThree · 2026 NASA Space Apps Challenge · Challenge: _Be An Earth System Trend Detective!_**
 
-Live tool: https://REPLACE_WITH_PAGES_URL/
+Live tool: https://khietnn.github.io/night-light-trend-detective/
 
 Night Light Trend Detective helps students and the public investigate whether places are getting brighter or darker at night, **where** the change happens, **how much** it changes per year, and whether the change is **statistically significant**. It uses NASA's **Black Marble** night-light data (VIIRS Day/Night Band, 2012–2025).
 

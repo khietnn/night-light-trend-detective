@@ -60,6 +60,10 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
     <h2><span class="step">1</span>Choose a place to investigate</h2>
     <p class="muted">Each region is a box of ~500 m satellite pixels. Night-time brightness comes from NASA's Black Marble annual product (VIIRS Day/Night Band).</p>
     <div class="regions" id="regions"></div>
+    <div class="controls" style="margin-top:18px">
+      <label><b>Choose a clue (variable):</b> <select id="var"></select></label>
+    </div>
+    <p class="muted" id="varDesc" style="margin:0"></p>
   </section>
 
   <section>
@@ -90,6 +94,7 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
       <div>
         <p class="muted">We ran the same Mann–Kendall test on <b>every pixel</b> (2012–2025). Red pixels got significantly brighter, blue pixels significantly dimmer, grey pixels show no significant trend.</p>
         <p id="pixelText"></p>
+        <p id="oppText"></p>
         <div class="warn"><b>Detective tip:</b> the same process (urban growth) can push neighbouring pixels in opposite directions — new suburbs light up while old city centres may look dimmer after switching to LED street lights, which the satellite sees less well.</div>
       </div>
       <div><img class="map" id="map" alt="Per-pixel night-light trend map"></div>
@@ -98,6 +103,7 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
 
   <section>
     <h2>Compare all regions</h2>
+    <p class="muted">Variable: <b id="cmpVar"></b> (full period). The same variable can trend differently from place to place.</p>
     <div class="scroll"><table id="cmp"><thead><tr><th>Region</th><th>Trend</th><th>Sen's slope / yr</th><th>% / yr</th><th>p-value</th><th>Significant?</th><th>Pixels brighter</th><th>Pixels dimmer</th></tr></thead><tbody></tbody></table></div>
   </section>
 
@@ -146,21 +152,31 @@ function mannKendall(x, y){
   return {s,z,p,slope,intercept,trend: p<0.05?(slope>0?'increasing':'decreasing'):'no significant trend'};
 }
 
-let DATA, cur, chart;
+let DATA, cur, curVar='mean_radiance', chart;
 fetch('data/results.json').then(r=>r.json()).then(d=>{ DATA=d; init(); });
+const verdictWord = v => v.significant ? (v.sen_slope_per_year>0?'increasing':'decreasing') : 'no significant trend';
 
 function init(){
   const box=document.getElementById('regions');
   Object.entries(DATA.regions).forEach(([k,r],i)=>{
     const b=document.createElement('button'); b.textContent=r.label; b.onclick=()=>select(k); b.dataset.k=k; box.appendChild(b);
   });
-  const tb=document.querySelector('#cmp tbody');
-  Object.values(DATA.regions).forEach(r=>{
-    const cls=r.significant?(r.sen_slope_per_year>0?'up':'down'):'ns';
-    tb.insertAdjacentHTML('beforeend',`<tr><td>${r.label}</td><td class="${cls}">${r.trend}</td><td>${fmt(r.sen_slope_per_year,3)}</td><td>${fmt(r.percent_change_per_year,1)}%</td><td>${r.p_value.toPrecision(2)}</td><td><span class="pill ${r.significant?'sig':'nsig'}">${r.significant?'Yes':'No'}</span></td><td class="up">${r.pixels_brightening_pct.toFixed(1)}%</td><td class="down">${r.pixels_dimming_pct.toFixed(1)}%</td></tr>`);
-  });
+  const first=Object.values(DATA.regions)[0];
+  const vs=document.getElementById('var');
+  vs.innerHTML=Object.entries(first.variables).map(([k,v])=>`<option value="${k}">${v.label} (${v.unit})</option>`).join('');
+  vs.onchange=()=>{ curVar=vs.value; renderTable(); update(); };
   ['y0','y1'].forEach(id=>document.getElementById(id).onchange=update);
+  renderTable();
   select(Object.keys(DATA.regions)[0]);
+}
+
+function renderTable(){
+  const tb=document.querySelector('#cmp tbody'); tb.innerHTML='';
+  document.getElementById('cmpVar').textContent=Object.values(DATA.regions)[0].variables[curVar].label;
+  Object.values(DATA.regions).forEach(r=>{
+    const v=r.variables[curVar], cls=v.significant?(v.sen_slope_per_year>0?'up':'down'):'ns';
+    tb.insertAdjacentHTML('beforeend',`<tr><td>${r.label}</td><td class="${cls}">${verdictWord(v)}</td><td>${fmt(v.sen_slope_per_year,3)} ${v.unit}</td><td>${fmt(v.percent_change_per_year,1)}%</td><td>${v.p_value.toPrecision(2)}</td><td><span class="pill ${v.significant?'sig':'nsig'}">${v.significant?'Yes':'No'}</span></td><td class="up">${r.pixels_brightening_pct.toFixed(1)}%</td><td class="down">${r.pixels_dimming_pct.toFixed(1)}%</td></tr>`);
+  });
 }
 
 function select(k){
@@ -171,31 +187,35 @@ function select(k){
   y0.value=r.years[0]; y1.value=r.years[r.years.length-1];
   document.getElementById('map').src=`img/${k}_trendmap.png`;
   document.getElementById('pixelText').innerHTML=`In <b>${r.label}</b>, <b class="up">${r.pixels_brightening_pct.toFixed(1)}%</b> of pixels became significantly brighter and <b class="down">${r.pixels_dimming_pct.toFixed(1)}%</b> significantly dimmer.`;
+  const c=r.variables.core, f=r.variables.fringe, cls=v=>v.significant?(v.sen_slope_per_year>0?'up':'down'):'ns';
+  document.getElementById('oppText').innerHTML=`<b>Old bright areas vs. areas that were dark:</b> established bright areas are <b class="${cls(c)}">${verdictWord(c)}</b> (${fmt(c.percent_change_per_year,1)}%/yr, p = ${c.p_value.toPrecision(2)}), while areas that were dark in ${r.years[0]} are <b class="${cls(f)}">${verdictWord(f)}</b> (${fmt(f.percent_change_per_year,1)}%/yr, p = ${f.p_value.toPrecision(2)}).`;
   update();
 }
 
 function update(){
-  const r=DATA.regions[cur], a=+document.getElementById('y0').value, b=+document.getElementById('y1').value;
+  const r=DATA.regions[cur], V=r.variables[curVar], a=+document.getElementById('y0').value, b=+document.getElementById('y1').value;
+  document.getElementById('varDesc').textContent=V.desc;
   const idx=r.years.map((y,i)=>i).filter(i=>r.years[i]>=Math.min(a,b)&&r.years[i]<=Math.max(a,b));
-  const x=idx.map(i=>r.years[i]), y=idx.map(i=>r.mean_radiance[i]);
+  const x=idx.map(i=>r.years[i]), y=idx.map(i=>V.values[i]);
   document.getElementById('nyears').textContent=`${x.length} years`;
   if(x.length<4){ document.getElementById('sentence').textContent='Pick at least 4 years — a trend test needs enough evidence.'; return; }
   const t=mannKendall(x,y), mean=y.reduce((p,c)=>p+c,0)/y.length, pct=t.slope/mean*100;
   const cls=t.p<0.05?(t.slope>0?'up':'down'):'ns';
   const dir=document.getElementById('vDir'); dir.textContent=t.p<0.05?(t.slope>0?'Brighter ↑':'Dimmer ↓'):'No clear trend'; dir.className='v '+cls;
-  document.getElementById('vSlope').innerHTML=`${fmt(t.slope,3)} <span style="font-size:13px" class="muted">${DATA.unit}/yr</span>`;
+  const U=V.unit;
+  document.getElementById('vSlope').innerHTML=`${fmt(t.slope,3)} <span style="font-size:13px" class="muted">${U}/yr</span>`;
   document.getElementById('vPct').textContent=`${fmt(pct,1)}% / yr`;
   document.getElementById('vP').innerHTML=`${t.p<0.001?'< 0.001':t.p.toFixed(3)} <span class="pill ${t.p<0.05?'sig':'nsig'}">${t.p<0.05?'significant':'not significant'}</span>`;
   document.getElementById('sentence').innerHTML = t.p<0.05
-    ? `🕵️ Case closed: from ${x[0]} to ${x[x.length-1]}, night lights in <b>${r.label}</b> <b class="${cls}">${t.slope>0?'increased':'decreased'}</b> by about <b>${Math.abs(t.slope).toFixed(3)} ${DATA.unit} per year</b> (${fmt(pct,1)}% per year). The Mann–Kendall p-value is ${t.p<0.001?'below 0.001':t.p.toFixed(3)}, so this trend is <b>statistically significant</b> at 95% confidence.`
-    : `🕵️ Not enough evidence: from ${x[0]} to ${x[x.length-1]}, night lights in <b>${r.label}</b> changed by ${fmt(t.slope,3)} ${DATA.unit} per year, but the p-value (${t.p.toFixed(3)}) is above 0.05, so we <b>cannot rule out random variation</b>. Try a longer period.`;
+    ? `🕵️ Case closed: from ${x[0]} to ${x[x.length-1]}, <b>${V.label.toLowerCase()}</b> in <b>${r.label}</b> <b class="${cls}">${t.slope>0?'increased':'decreased'}</b> by about <b>${Math.abs(t.slope).toFixed(3)} ${U} per year</b> (${fmt(pct,1)}% per year). The Mann–Kendall p-value is ${t.p<0.001?'below 0.001':t.p.toFixed(3)}, so this trend is <b>statistically significant</b> at 95% confidence.`
+    : `🕵️ Not enough evidence: from ${x[0]} to ${x[x.length-1]}, <b>${V.label.toLowerCase()}</b> in <b>${r.label}</b> changed by ${fmt(t.slope,3)} ${U} per year, but the p-value (${t.p.toFixed(3)}) is above 0.05, so we <b>cannot rule out random variation</b>. Try a longer period.`;
   const line=x.map(xx=>t.intercept+t.slope*xx);
   const cfg={type:'line',data:{labels:x,datasets:[
-      {label:'Mean night-time radiance',data:y,borderColor:'#f5b942',backgroundColor:'#f5b942',pointRadius:4,tension:0},
+      {label:V.label,data:y,borderColor:'#f5b942',backgroundColor:'#f5b942',pointRadius:4,tension:0},
       {label:"Theil–Sen trend",data:line,borderColor:'#9aa5c4',borderDash:[6,5],pointRadius:0}]},
     options:{maintainAspectRatio:false,plugins:{legend:{labels:{color:'#e8ecf8'}}},
-      scales:{x:{ticks:{color:'#9aa5c4'},grid:{color:'#2a3560'}},y:{title:{display:true,text:'Radiance ('+DATA.unit+')',color:'#9aa5c4'},ticks:{color:'#9aa5c4'},grid:{color:'#2a3560'}}}}};
-  if(chart){chart.data=cfg.data;chart.update();} else chart=new Chart(document.getElementById('chart'),cfg);
+      scales:{x:{ticks:{color:'#9aa5c4'},grid:{color:'#2a3560'}},y:{title:{display:true,text:V.label+' ('+U+')',color:'#9aa5c4'},ticks:{color:'#9aa5c4'},grid:{color:'#2a3560'}}}}};
+  if(chart){chart.data=cfg.data;chart.options=cfg.options;chart.update();} else chart=new Chart(document.getElementById('chart'),cfg);
 }
 </script>
 </body>

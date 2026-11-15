@@ -1,0 +1,160 @@
+{
+ "unit": "nW/cm\u00b2/sr",
+ "alpha": 0.05,
+ "regions": {
+  "hcmc": {
+   "label": "Ho Chi Minh City",
+   "bbox": [
+    106.35,
+    10.55,
+    107.0,
+    11.15
+   ],
+   "years": [
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+   ],
+   "mean_radiance": [
+    6.541,
+    6.9,
+    7.45,
+    8.194,
+    8.973,
+    9.542,
+    10.618,
+    11.737,
+    12.156,
+    12.281,
+    12.001,
+    12.188,
+    12.862,
+    12.629
+   ],
+   "trend": "increasing",
+   "p_value": 7.1531099037347445e-06,
+   "significant": true,
+   "sen_slope_per_year": 0.5419592423872515,
+   "percent_change_per_year": 5.266414005310525,
+   "pixels_brightening_pct": 92.37438075017693,
+   "pixels_dimming_pct": 0.778485491861288,
+   "variables": {
+    "mean_radiance": {
+     "label": "Average night-time brightness",
+     "unit": "nW/cm\u00b2/sr",
+     "desc": "Mean radiance of all pixels in the region.",
+     "values": [
+      6.5413,
+      6.9002,
+      7.4498,
+      8.1942,
+      8.9725,
+      9.5424,
+      10.6182,
+      11.7369,
+      12.1559,
+      12.2805,
+      12.0013,
+      12.1884,
+      12.8617,
+      12.6285
+     ],
+     "trend": "increasing",
+     "p_value": 7.1531099037347445e-06,
+     "significant": true,
+     "sen_slope_per_year": 0.5419592423872515,
+     "percent_change_per_year": 5.266414005310525
+    },
+    "lit_area": {
+     "label": "Lit area",
+     "unit": "% of region",
+     "desc": "Share of pixels brighter than 5.0 nW/cm\u00b2/sr: a proxy for how far lights spread (urban sprawl).",
+     "values": [
+      32.5106,
+      34.5763,
+      37.6238,
+      40.4061,
+      43.865,
+      45.9085,
+      52.1054,
+      56.3738,
+      60.138,
+      61.7481,
+      61.6817,
+      64.172,
+      67.2859,
+      64.3047
+     ],
+     "trend": "increasing",
+     "p_value": 2.5008481938648686e-06,
+     "significant": true,
+     "sen_slope_per_year": 2.949791617519856,
+     "percent_change_per_year": 5.714277942348549
+    },
+    "core": {
+     "label": "Brightness of established bright areas",
+     "unit": "nW/cm\u00b2/sr",
+     "desc": "Mean radiance of pixels that were already in the brightest 10% in 2012 (old centres, ports, industry).",
+     "values": [
+      31.794,
+      32.0616,
+      33.1113,
+      35.7633,
+      37.8937,
+      39.7901,
+      40.7531,
+      42.7731,
+      42.1074,
+      41.3461,
+      41.717,
+      41.1382,
+      43.0439,
+      43.2001
+     ],
+     "trend": "increasing",
+     "p_value": 8.092904639855902e-05,
+     "significant": true,
+     "sen_slope_per_year": 0.9076595306396484,
+     "percent_change_per_year": 2.3252331258890444
+    },
+    "fringe": {
+     "label": "Brightness of areas that were dark",
+     "unit": "nW/cm\u00b2/sr",
+     "desc": "Mean radiance of pixels that were in the darkest 50% in 2012 (rural land, new suburbs, sea).",
+     "values": [
+      1.0537,
+      1.2566,
+      1.556,
+      1.8505,
+      2.1809,
+      2.4201,
+      3.3596,
+      4.3158,
+      4.801,
+      5.079,
+      4.4354,
+      4.568,
+      4.8536,
+      4.6373
+     ],
+     "trend": "increasing",
+     "p_value": 5.097264827158554e-05,
+     "significant": true,
+     "sen_slope_per_year": 0.3269963264465332,
+     "percent_change_per_year": 9.873190032679627
+    }
+   }
+  }
+ }
+}
