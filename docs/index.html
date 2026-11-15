@@ -11,7 +11,13 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 a{color:var(--accent)}
-header{padding:48px 16px 28px;text-align:center;background:radial-gradient(ellipse at top,#1c2a5a 0%,var(--bg) 70%)}
+header{position:relative;overflow:hidden;padding:48px 16px 28px;text-align:center;background:radial-gradient(ellipse at top,#1c2a5a 0%,var(--bg) 70%);transition:background .8s}
+header.lights-off{background:radial-gradient(ellipse at top,#070b1c 0%,#04060d 70%)}
+#sky{position:absolute;inset:0;width:100%;height:100%;z-index:0;touch-action:none}
+header h1,header p{position:relative;z-index:1;pointer-events:none}
+.lights{position:relative;z-index:2;margin-top:16px;min-height:44px;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:rgba(20,27,51,.7);color:var(--muted);font-size:14px;cursor:pointer}
+.lights:hover{color:var(--text);border-color:var(--accent)}
+#lightsNote{color:#cfd6ee;font-size:14px;margin-top:10px}
 header h1{margin:0;font-size:clamp(28px,5vw,44px);letter-spacing:.5px}
 header h1 span{color:var(--accent)}
 header p{max-width:760px;margin:12px auto 0;color:var(--muted)}
@@ -53,10 +59,13 @@ img.map{aspect-ratio:6/5;height:auto}
 </style>
 </head>
 <body>
-<header>
+<header id="hdr">
+  <canvas id="sky" aria-hidden="true"></canvas>
   <h1>Night Light <span>Trend Detective</span></h1>
   <p>Are our cities and farmlands getting brighter at night? Pick a place, follow the clues in 14 years of NASA satellite data,
   and let statistics decide whether the change is real or just noise.</p>
+  <button type="button" class="lights" id="lightsBtn" aria-pressed="false">Pull the sun's cord: lights off</button>
+  <p id="lightsNote" hidden>Lights off: the stars come back. Artificial light at night hides them from city skies.</p>
 </header>
 
 <main>
@@ -290,6 +299,137 @@ function update(){
       scales:{x:{ticks:{color:'#9aa5c4'},grid:{color:'#2a3560'}},y:{title:{display:true,text:V.label+' ('+U+')',color:'#9aa5c4'},ticks:{color:'#9aa5c4'},grid:{color:'#2a3560'}}}}};
   if(chart){chart.data=cfg.data;chart.options=cfg.options;chart.update();} else chart=new Chart(document.getElementById('chart'),cfg);
 }
+</script>
+<script>
+/* Hanging sun on a rope: Verlet integration with gravity, damping and an inextensible (but slack-able) rope.
+   Drag the sun; pull it down hard and release to switch the "city lights" off and reveal the stars. */
+(() => {
+  const hdr = document.getElementById('hdr'), cv = document.getElementById('sky'), ctx = cv.getContext('2d');
+  const btn = document.getElementById('lightsBtn'), note = document.getElementById('lightsNote');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const N = 16, G = 0.45, DAMP = 0.992, ITER = 24, SUN_INV_MASS = 0.15;
+  let W = 0, H = 0, seg = 10, ax = 0, R = 20, pts = [], stars = [], off = false, drag = null, visible = true, t = 0, lastW = -1;
+
+  function layout() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = hdr.clientWidth; H = hdr.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const narrow = W < 700;
+    R = narrow ? 13 : 24;
+    ax = narrow ? W - 30 : W - Math.max(110, W * 0.11);
+    seg = (narrow ? H * 0.28 : H * 0.5) / (N - 1);
+    stars = Array.from({ length: Math.round(W * H / 2600) }, () =>
+      ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.2 + 0.3, p: Math.random() * 6.283 }));
+  }
+
+  function reset(atRest) {
+    pts = [];
+    for (let i = 0; i < N; i++) {
+      // drop-in start: rope bunched at the anchor, sun pulled to the side above the header
+      const x = atRest ? ax : ax - 90 * (i / (N - 1)), y = atRest ? i * seg : -40 * (i / (N - 1));
+      pts.push({ x, y, px: x, py: y });
+    }
+  }
+
+  function step() {
+    for (let i = 1; i < N; i++) {
+      const p = pts[i];
+      if (drag && i === N - 1) continue;
+      const vx = (p.x - p.px) * DAMP, vy = (p.y - p.py) * DAMP;
+      p.px = p.x; p.py = p.y; p.x += vx; p.y += vy + G;
+    }
+    for (let k = 0; k < ITER; k++) {
+      pts[0].x = ax; pts[0].y = 0;
+      for (let i = 0; i < N - 1; i++) {
+        const a = pts[i], b = pts[i + 1], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6;
+        if (d <= seg) continue;                       // a rope resists stretching only, so it can go slack
+        const ia = i === 0 ? 0 : 1, ib = i + 1 === N - 1 ? (drag ? 0 : SUN_INV_MASS) : 1, s = ia + ib;
+        if (!s) continue;
+        const diff = (d - seg) / d;
+        a.x += dx * diff * ia / s; a.y += dy * diff * ia / s;
+        b.x -= dx * diff * ib / s; b.y -= dy * diff * ib / s;
+      }
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    if (off) for (const s of stars) {
+      ctx.fillStyle = `rgba(255,255,255,${0.3 + 0.7 * Math.abs(Math.sin(t * 0.02 + s.p))})`;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(200,210,235,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < N - 1; i++)
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, (pts[i].x + pts[i + 1].x) / 2, (pts[i].y + pts[i + 1].y) / 2);
+    const s = pts[N - 1], q = pts[N - 2];
+    ctx.lineTo(s.x, s.y); ctx.stroke();
+    const glow = off ? 0.2 : 1, ang = Math.atan2(q.x - s.x, s.y - q.y);
+    const gr = ctx.createRadialGradient(s.x, s.y, R * 0.3, s.x, s.y, R * 3.4);
+    gr.addColorStop(0, `rgba(255,214,102,${0.55 * glow})`); gr.addColorStop(1, 'rgba(255,214,102,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(s.x, s.y, R * 3.4, 0, 6.283); ctx.fill();
+    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(ang + t * 0.004);
+    ctx.strokeStyle = `rgba(255,200,80,${0.85 * glow})`; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    for (let k = 0; k < 12; k++) {
+      ctx.rotate(Math.PI / 6); ctx.beginPath();
+      ctx.moveTo(R * 1.25, 0); ctx.lineTo(R * (k % 2 ? 1.55 : 1.75), 0); ctx.stroke();
+    }
+    ctx.restore();
+    ctx.fillStyle = off ? '#6b5f43' : '#f5b942'; ctx.beginPath(); ctx.arc(s.x, s.y, R, 0, 6.283); ctx.fill();
+  }
+
+  function setLights(state) {
+    off = state; hdr.classList.toggle('lights-off', off);
+    btn.setAttribute('aria-pressed', off); note.hidden = !off;
+    btn.textContent = off ? "Pull the sun's cord: lights on" : "Pull the sun's cord: lights off";
+    if (reduce) draw();
+  }
+
+  function pos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  function nearSun(p) { const s = pts[N - 1]; return Math.hypot(p.x - s.x, p.y - s.y) < R * 2; }
+
+  cv.addEventListener('pointerdown', e => {
+    if (reduce || !nearSun(pos(e))) return;
+    drag = pos(e); cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing';
+  });
+  cv.addEventListener('pointermove', e => {
+    const p = pos(e);
+    if (drag) {
+      const s = pts[N - 1], maxL = seg * (N - 1) + 70;          // the cord can stretch a little, not forever
+      let dx = p.x - ax, dy = Math.max(p.y, 0); const d = Math.hypot(dx, dy);
+      if (d > maxL) { dx *= maxL / d; dy *= maxL / d; }
+      s.px = s.x; s.py = s.y; s.x = ax + dx; s.y = dy;
+    }
+    else cv.style.cursor = nearSun(p) ? 'grab' : 'default';
+  });
+  const release = () => {
+    if (!drag) return;
+    drag = null; cv.style.cursor = 'grab';
+    if (pts[N - 1].y > seg * (N - 1) + 45) setLights(!off);   // a hard downward pull works like a lamp cord
+  };
+  cv.addEventListener('pointerup', release); cv.addEventListener('pointercancel', release);
+
+  btn.addEventListener('click', () => {
+    setLights(!off);
+    if (!reduce) pts[N - 1].py -= 14;                        // give the sun a tug so the button feels physical
+  });
+
+  function loop() {
+    if (visible) { step(); draw(); t++; }
+    requestAnimationFrame(loop);
+  }
+
+  layout(); reset(reduce);
+  if (reduce) draw();
+  else {
+    new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(hdr);
+    requestAnimationFrame(loop);
+  }
+  window.addEventListener('resize', () => {
+    if (hdr.clientWidth === lastW) return;
+    lastW = hdr.clientWidth; layout(); reset(true); if (reduce) draw();
+  });
+  lastW = hdr.clientWidth;
+})();
 </script>
 </body>
 </html>
