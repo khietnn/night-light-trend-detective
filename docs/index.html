@@ -120,6 +120,22 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
   </section>
 
   <section>
+    <h2>Beyond the satellite: what explains the Binh Thuan drop?</h2>
+    <p class="muted">Satellite data show <b>what</b> changed. To test <b>why</b>, we compared our results with independent reports. These sources make one explanation <b>consistent with</b> the data; they do not prove it.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Evidence</th><th>What it says</th><th>Matches our data?</th></tr></thead>
+      <tbody>
+        <tr><td><b>Peer-reviewed research</b></td><td>VIIRS night lights show the seasonal lighting of dragon fruit fields in southern Vietnam, checked against farmer interviews (Krauser et al., 2022)<sup>1</sup>.</td><td>Yes: farm lighting is visible from space, so it is a valid variable.</td></tr>
+        <tr><td><b>Market shock, late 2021–2022</b></td><td>China border restrictions held up exports; farm-gate prices fell to 500–4,000 VND/kg against a break-even of 7,000–10,000 VND/kg; farmers cut down trees<sup>2,3</sup>.</td><td>Yes: our brightness fell <b>35%</b> from 2021 to 2022.</td></tr>
+        <tr><td><b>Less farmland</b></td><td>Binh Thuan dragon fruit area fell from 33,750 ha (2021)<sup>3</sup> to about 27,900 ha at the end of 2022 (−17%)<sup>4</sup>, and was about 27,000 ha in 2024<sup>5</sup>.</td><td>Yes: our lit area fell <b>12%</b> in the same year and has not recovered.</td></tr>
+        <tr><td><b>More efficient bulbs</b></td><td>Farmers moved from 60 W incandescent to compact bulbs (~60% less power, reported 2017)<sup>6</sup>; a 2021–2023 project replaced compact bulbs with 80,000 9 W LEDs (~50% less power)<sup>5</sup>.</td><td>Partly: dimmer, bluer bulbs look darker to VIIRS even where fields are still lit.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted"><b>Our reading:</b> brightness fell more than farmland area (−35% vs −17%), which fits a mix of fewer fields, less off-season lighting while prices were low, and more efficient bulbs. Separating these causes needs field data (lighting hours, bulb types per farm).</p>
+    <p class="muted" style="font-size:13px">Sources: <sup>1</sup> <a href="https://ideas.repec.org/a/taf/raagxx/v112y2022i4p1139-1158.html">Krauser et al. (2022), Annals of the American Association of Geographers 112(4)</a> · <sup>2</sup> <a href="https://vietnamnews.vn/economy/1166919/binh-thuan-province-farmers-cut-down-dragon-fruit-trees-on-losing-china-market.html">Viet Nam News, 24 Mar 2022</a> · <sup>3</sup> <a href="https://bnews.vn/dien-tich-thanh-long-binh-thuan-giam-gan-1-000-ha/238583.html">Bnews, 30 Mar 2022</a> · <sup>4</sup> <a href="https://www.sggp.org.vn/thu-phu-thanh-long-tim-huong-di-ben-vung-post679374.html">SGGP, 20 Feb 2023</a> · <sup>5</sup> <a href="https://tietkiemnangluong.com.vn/tin-tuc/pho-bien-kien-thuc/t31787/giam-den-50-dien-nang-khi-su-dung-den-led-kich-thich-thanh-long-trai-vu">Tiet kiem nang luong, 17 Oct 2024</a> · <sup>6</sup> <a href="https://rangdong.com.vn/rang-dong-sang-ruc-39-thu-phu-39-thanh-long-n259.html">Rang Dong, 27 Dec 2017</a></p>
+  </section>
+
+  <section>
     <h2>Detective glossary</h2>
     <dl>
       <dt>Radiance (nW/cm²/sr)</dt><dd>How much light the satellite measures coming up from the ground at night, per area and viewing angle. Higher = brighter.</dd>
@@ -136,7 +152,7 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
     <h2>Data, method &amp; limitations</h2>
     <p class="muted"><b>Data:</b> NASA Black Marble VNP46A4 Collection 2 (annual, 15 arc-second ≈ 500 m), layer <code>AllAngle_Composite_Snow_Free</code>, 2012–2025, from NASA LAADS DAAC.
     <b>Method:</b> clip each region, average valid pixels per year, Mann–Kendall test (α = 0.05) and Theil–Sen slope for the regional series and for every pixel. The period selector re-runs the test in your browser.</p>
-    <p class="muted"><b>Limitations:</b> VIIRS Day/Night Band is not sensitive to blue light below ~500 nm, so switching to white LEDs can look like dimming even if sky brightness increases. The satellite sees upward light at ~01:30 local time, not the sky glow people experience. Annual composites hide seasonal and event-level changes (e.g. typhoon blackouts). We analyse linear (monotonic) trends only.</p>
+    <p class="muted"><b>Limitations:</b> <b>Trends show what changed, not why.</b> Causes need independent data, such as the reports listed above. VIIRS Day/Night Band is not sensitive to blue light below ~500 nm, so switching to white LEDs can look like dimming even if sky brightness increases. The satellite sees upward light at ~01:30 local time, not the sky glow people experience. Annual composites hide seasonal and event-level changes (e.g. typhoon blackouts). We analyse linear (monotonic) trends only.</p>
   </section>
 </main>
 
@@ -194,7 +210,7 @@ const CASES = [
   {title:'Case 7: The dragon fruit boom', region:'binhthuan', v:'mean_radiance', from:2012, to:2019,
    text:'Only 2012–2019: farm lighting grew fast and the trend is significant. A trend test answers "is there a consistent direction in this window?", so the window you choose matters.'},
   {title:'Case 8: …and the bust?', region:'binhthuan', v:'mean_radiance', from:2019, to:2025,
-   text:'Since 2019 brightness fell sharply (note the drop in 2022), but with only 7 years the decline is not yet significant. A possible explanation to investigate: lower dragon fruit prices and exports, fewer lit fields, and switching to LED bulbs that the satellite sees less well.'},
+   text:'Since 2019 brightness fell sharply (note the drop in 2022), but with only 7 years the decline is not yet significant. Scroll to "Beyond the satellite": the 2022 drop matches a documented price collapse, a 17% loss of dragon fruit farmland and a switch to efficient bulbs. Satellite data alone cannot prove the cause.'},
   {title:'Case 9: Opposite trends, one region', region:'binhthuan', v:'core',
    text:'The brightest farm areas of 2012 got significantly dimmer, while areas that were dark got significantly brighter. Switch the variable to "areas that were dark" and compare, then look at the blue and red patches on the map.'},
 ];
