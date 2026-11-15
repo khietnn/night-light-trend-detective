@@ -11,13 +11,12 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 a{color:var(--accent)}
-header{position:relative;overflow:hidden;padding:48px 16px 28px;text-align:center;background:radial-gradient(ellipse at top,#1c2a5a 0%,var(--bg) 70%);transition:background .8s}
-header.lights-off{background:radial-gradient(ellipse at top,#070b1c 0%,#04060d 70%)}
-#sky{position:absolute;inset:0;width:100%;height:100%;z-index:0;touch-action:none}
+header{position:relative;padding:48px 16px 28px;text-align:center;background:radial-gradient(ellipse at top,#1c2a5a 0%,var(--bg) 70%);transition:background .8s}
+header.lights-off{background:radial-gradient(ellipse at top,#04060d 0%,#070b1c 45%,var(--bg) 85%)}
+#sky{position:absolute;left:0;top:0;width:100%;z-index:5;pointer-events:none}
 header h1,header p{position:relative;z-index:1;pointer-events:none}
 .lights{position:relative;z-index:2;margin-top:16px;min-height:44px;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:rgba(20,27,51,.7);color:var(--muted);font-size:14px;cursor:pointer}
 .lights:hover{color:var(--text);border-color:var(--accent)}
-#lightsNote{color:#cfd6ee;font-size:14px;margin-top:10px}
 header h1{margin:0;font-size:clamp(28px,5vw,44px);letter-spacing:.5px}
 header h1 span{color:var(--accent)}
 header p{max-width:760px;margin:12px auto 0;color:var(--muted)}
@@ -65,7 +64,6 @@ img.map{aspect-ratio:6/5;height:auto}
   <p>Are our cities and farmlands getting brighter at night? Pick a place, follow the clues in 14 years of NASA satellite data,
   and let statistics decide whether the change is real or just noise.</p>
   <button type="button" class="lights" id="lightsBtn" aria-pressed="false">Pull the sun's cord: lights off</button>
-  <p id="lightsNote" hidden>Lights off: the stars come back. Artificial light at night hides them from city skies.</p>
 </header>
 
 <main>
@@ -302,31 +300,30 @@ function update(){
 </script>
 <script>
 /* Hanging sun on a rope: Verlet integration with gravity, damping and an inextensible (but slack-able) rope.
-   Drag the sun; pull it down hard and release to switch the "city lights" off and reveal the stars. */
+   Tap the sun, or pull it down and release, to switch the "city lights" off: the sun becomes the moon and stars appear.
+   The canvas overflows the header so the glow and the drag are not clipped; it never blocks clicks on the page. */
 (() => {
   const hdr = document.getElementById('hdr'), cv = document.getElementById('sky'), ctx = cv.getContext('2d');
-  const btn = document.getElementById('lightsBtn'), note = document.getElementById('lightsNote');
+  const btn = document.getElementById('lightsBtn');
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const N = 16, G = 0.45, DAMP = 0.992, ITER = 24, SUN_INV_MASS = 0.15;
-  let W = 0, H = 0, seg = 10, ax = 0, R = 20, pts = [], stars = [], off = false, drag = null, visible = true, t = 0, lastW = -1;
-  let mix = 0, moved = 0;   // mix: 0 = sun, 1 = moon (eased); moved: pointer travel during a drag
+  let W = 0, H = 0, HH = 0, seg = 10, ax = 0, R = 20, pts = [], stars = [], off = false, drag = null, visible = true, t = 0;
+  let mix = 0, moved = 0, hover = false;
 
   function layout() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = hdr.clientWidth; H = hdr.clientHeight;
-    cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const narrow = W < 700;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), narrow = hdr.clientWidth < 700;
+    W = hdr.clientWidth; HH = hdr.clientHeight; H = HH + (narrow ? 240 : 340);
+    cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     R = narrow ? 13 : 24;
     ax = narrow ? W - 30 : W - Math.max(110, W * 0.11);
-    seg = (narrow ? H * 0.28 : H * 0.5) / (N - 1);
-    stars = Array.from({ length: Math.round(W * H / 2600) }, () =>
-      ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.2 + 0.3, p: Math.random() * 6.283 }));
+    seg = (narrow ? HH * 0.28 : HH * 0.5) / (N - 1);
+    stars = Array.from({ length: Math.round(W * HH / 2600) }, () =>
+      ({ x: Math.random() * W, y: Math.random() * HH, r: Math.random() * 1.2 + 0.3, p: Math.random() * 6.283 }));
   }
 
   function reset(atRest) {
     pts = [];
     for (let i = 0; i < N; i++) {
-      // drop-in start: rope bunched at the anchor, sun pulled to the side above the header
       const x = atRest ? ax : ax - 90 * (i / (N - 1)), y = atRest ? i * seg : -40 * (i / (N - 1));
       pts.push({ x, y, px: x, py: y });
     }
@@ -372,9 +369,7 @@ function update(){
     const s = pts[N - 1], q = pts[N - 2];
     ctx.lineTo(s.x, s.y); ctx.stroke();
     const ang = Math.atan2(q.x - s.x, s.y - q.y);
-
-    // sun (fades out as the lights go off)
-    if (mix < 0.99) {
+    if (mix < 0.99) {                                 // sun
       ctx.globalAlpha = 1 - mix;
       glowAt(s.x, s.y, '255,214,102', 0.55);
       ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(ang + t * 0.004);
@@ -386,8 +381,7 @@ function update(){
       ctx.restore();
       ctx.fillStyle = '#f5b942'; ctx.beginPath(); ctx.arc(s.x, s.y, R, 0, 6.283); ctx.fill();
     }
-    // crescent moon with craters (fades in), turning with the rope like the sun
-    if (mix > 0.01) {
+    if (mix > 0.01) {                                 // crescent moon with craters
       ctx.globalAlpha = mix;
       glowAt(s.x, s.y, '170,195,255', 0.35);
       ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(ang);
@@ -396,7 +390,7 @@ function update(){
       for (const [cx, cy, cr] of [[-0.35, -0.3, 0.18], [-0.45, 0.25, 0.13], [-0.05, 0.5, 0.1]]) {
         ctx.beginPath(); ctx.arc(cx * R, cy * R, cr * R, 0, 6.283); ctx.fill();
       }
-      ctx.fillStyle = 'rgba(7,11,28,.92)';                     // night side of the moon
+      ctx.fillStyle = 'rgba(7,11,28,.92)';
       ctx.beginPath(); ctx.arc(R * 0.55, -R * 0.2, R * 0.95, 0, 6.283); ctx.fill();
       ctx.restore();
     }
@@ -405,44 +399,54 @@ function update(){
 
   function setLights(state) {
     off = state; hdr.classList.toggle('lights-off', off);
-    btn.setAttribute('aria-pressed', off); note.hidden = !off;
+    btn.setAttribute('aria-pressed', off);
     btn.textContent = off ? "Pull the moon's cord: lights on" : "Pull the sun's cord: lights off";
     if (reduce) draw();
   }
 
+  // Pointer handling on the window: the canvas ignores clicks, we only grab when the pointer is on the sun.
   function pos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   function nearSun(p) { const s = pts[N - 1]; return Math.hypot(p.x - s.x, p.y - s.y) < R * 2; }
 
-  cv.addEventListener('pointerdown', e => {
-    if (reduce || !nearSun(pos(e))) return;
-    drag = pos(e); moved = 0; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing';
+  window.addEventListener('pointerdown', e => {
+    if (reduce || e.button > 0 || !nearSun(pos(e))) return;
+    drag = pos(e); moved = 0; e.preventDefault(); document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none'; window.getSelection()?.removeAllRanges();
   });
-  cv.addEventListener('pointermove', e => {
+  document.addEventListener('selectstart', e => { if (drag) e.preventDefault(); });
+  document.addEventListener('mousedown', e => { if (drag) e.preventDefault(); });
+  window.addEventListener('touchstart', e => {        // stop the page from scrolling while the sun is held
+    if (reduce) return;
+    const t0 = e.touches[0]; if (t0 && nearSun(pos(t0))) e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('pointermove', e => {
     const p = pos(e);
     if (drag) {
       moved += Math.hypot(p.x - drag.x, p.y - drag.y); drag = p;
-      const s = pts[N - 1], maxL = seg * (N - 1) + 70;          // the cord can stretch a little, not forever
+      const s = pts[N - 1], maxL = seg * (N - 1) + 160;          // an elastic cord: stretches, but not forever
       let dx = p.x - ax, dy = Math.max(p.y, 0); const d = Math.hypot(dx, dy);
       if (d > maxL) { dx *= maxL / d; dy *= maxL / d; }
       s.px = s.x; s.py = s.y; s.x = ax + dx; s.y = dy;
+    } else if (!reduce) {
+      const n = nearSun(p);
+      if (n !== hover) { hover = n; document.body.style.cursor = n ? 'grab' : ''; }
     }
-    else cv.style.cursor = nearSun(p) ? 'grab' : 'default';
   });
   const release = () => {
     if (!drag) return;
-    drag = null; cv.style.cursor = 'grab';
-    if (moved < 6) { setLights(!off); pts[N - 1].py -= 10; }         // a tap on the sun also flips it
+    drag = null; document.body.style.cursor = hover ? 'grab' : ''; document.body.style.userSelect = '';
+    if (moved < 6) { setLights(!off); pts[N - 1].py -= 10; }         // a tap on the sun flips it
     else if (pts[N - 1].y > seg * (N - 1) + 22) setLights(!off);     // a downward pull works like a lamp cord
   };
-  cv.addEventListener('pointerup', release); cv.addEventListener('pointercancel', release);
+  window.addEventListener('pointerup', release); window.addEventListener('pointercancel', release);
 
   btn.addEventListener('click', () => {
     setLights(!off);
-    if (!reduce) pts[N - 1].py -= 14;                        // give the sun a tug so the button feels physical
+    if (!reduce) pts[N - 1].py -= 14;
   });
 
   function loop() {
-    if (visible) { step(); draw(); t++; }
+    if (visible || drag) { step(); draw(); t++; }
     requestAnimationFrame(loop);
   }
 
@@ -452,16 +456,15 @@ function update(){
     new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(hdr);
     requestAnimationFrame(loop);
   }
-  let lastH = hdr.clientHeight;
+  let lastW = hdr.clientWidth, lastH = hdr.clientHeight;
   new ResizeObserver(() => {
     const w = hdr.clientWidth, h = hdr.clientHeight;
     if (w === lastW && h === lastH) return;
     const widthChanged = w !== lastW;
     lastW = w; lastH = h; layout();
-    if (widthChanged) reset(true);          // a height change (the note appearing) keeps the rope where it is
+    if (widthChanged) reset(true);
     if (reduce) draw();
   }).observe(hdr);
-  lastW = hdr.clientWidth;
 })();
 </script>
 </body>
