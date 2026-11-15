@@ -57,6 +57,13 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
 
 <main>
   <section>
+    <h2>🔎 New here? Start with a case</h2>
+    <p class="muted">Each case sets up the tool for you. Read the verdict, then change the settings and investigate on your own.</p>
+    <div class="regions" id="cases"></div>
+    <p class="sentence" id="caseText" style="display:none"></p>
+  </section>
+
+  <section>
     <h2><span class="step">1</span>Choose a place to investigate</h2>
     <p class="muted">Each region is a box of ~500 m satellite pixels. Night-time brightness comes from NASA's Black Marble annual product (VIIRS Day/Night Band).</p>
     <div class="regions" id="regions"></div>
@@ -168,6 +175,37 @@ function init(){
   ['y0','y1'].forEach(id=>document.getElementById(id).onchange=update);
   renderTable();
   select(Object.keys(DATA.regions)[0]);
+  renderCases();
+}
+
+const CASES = [
+  {title:'Case 1: Is the city getting brighter?', region:'hcmc', v:'mean_radiance',
+   text:'Ho Chi Minh City over the full record. Look at the verdict in step 3: how much brighter per year, and is it significant?'},
+  {title:'Case 2: Has the brightening stopped?', region:'hcmc', v:'mean_radiance', from:2019,
+   text:'Same city, but only since 2019. Fewer years and a flatter curve: does the trend stay significant? This is why scientists need long records and why short windows can mislead.'},
+  {title:'Case 3: Where did the city spread?', region:'hcmc', v:'lit_area',
+   text:'Lit area measures how much of the region is brighter than 5 nW/cm²/sr. Compare it with the map in step 4: which places lit up for the first time?'},
+  {title:'Case 4: Old centre vs. new edges', region:'hcmc', v:'fringe',
+   text:'Areas that were dark in 2012 versus areas that were already bright. Switch the variable between the two and compare the % per year.'},
+  {title:'Case 5: Two cities, one variable', region:'hanoi', v:'mean_radiance',
+   text:'Now Hanoi. Use the comparison table to see whether the same variable trends the same way in both cities.'},
+  {title:'Case 6: Light near sea-turtle beaches', region:'condao', v:'mean_radiance',
+   text:'Con Dao Islands host Vietnam\'s main green-turtle nesting beaches. Is artificial light here increasing, and is the change significant?'},
+];
+
+function renderCases(){
+  const box=document.getElementById('cases');
+  CASES.filter(c=>DATA.regions[c.region]).forEach(c=>{
+    const b=document.createElement('button'); b.textContent=c.title;
+    b.onclick=()=>{
+      document.querySelectorAll('#cases button').forEach(x=>x.classList.toggle('active',x===b));
+      curVar=c.v; document.getElementById('var').value=c.v; renderTable(); select(c.region);
+      if(c.from){ document.getElementById('y0').value=c.from; update(); }
+      const t=document.getElementById('caseText'); t.style.display='block'; t.textContent='🕵️ '+c.text;
+      document.getElementById('chart').scrollIntoView({behavior:'smooth',block:'center'});
+    };
+    box.appendChild(b);
+  });
 }
 
 function renderTable(){
