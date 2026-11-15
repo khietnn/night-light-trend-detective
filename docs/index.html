@@ -45,6 +45,10 @@ dt{font-weight:700}dd{margin:0;color:var(--muted)}
 .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:600}
 .pill.sig{background:rgba(60,207,145,.15);color:var(--ok)}.pill.nsig{background:rgba(154,165,196,.15);color:var(--muted)}
 footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);font-size:14px}
+.regions button,select{min-height:44px}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+img.map{aspect-ratio:6/5;height:auto}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 .warn{background:rgba(245,185,66,.08);border:1px solid rgba(245,185,66,.35);border-radius:10px;padding:12px 14px;margin-top:12px}
 </style>
 </head>
@@ -57,7 +61,7 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
 
 <main>
   <section>
-    <h2>🔎 New here? Start with a case</h2>
+    <h2>New here? Start with a case</h2>
     <p class="muted">Each case sets up the tool for you. Read the verdict, then change the settings and investigate on your own.</p>
     <div class="regions" id="cases"></div>
     <p class="sentence" id="caseText" style="display:none"></p>
@@ -66,7 +70,7 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
   <section>
     <h2><span class="step">1</span>Choose a place to investigate</h2>
     <p class="muted">Each region is a box of ~500 m satellite pixels. Night-time brightness comes from NASA's Black Marble annual product (VIIRS Day/Night Band).</p>
-    <div class="regions" id="regions"></div>
+    <div class="regions" id="regions" aria-label="Regions"><p class="muted" id="loading" role="status">Loading NASA Black Marble results…</p></div>
     <div class="controls" style="margin-top:18px">
       <label><b>Choose a clue (variable):</b> <select id="var"></select></label>
     </div>
@@ -81,7 +85,7 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
       <label>to <select id="y1"></select></label>
       <span class="muted" id="nyears"></span>
     </div>
-    <div class="chartbox"><canvas id="chart"></canvas></div>
+    <div class="chartbox"><canvas id="chart" role="img" aria-label="Line chart of yearly night-time brightness with a trend line"></canvas></div>
   </section>
 
   <section>
@@ -92,7 +96,7 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
       <div class="stat"><div class="k">Relative change</div><div class="v" id="vPct">–</div></div>
       <div class="stat"><div class="k">Mann–Kendall p-value</div><div class="v" id="vP">–</div></div>
     </div>
-    <p class="sentence" id="sentence"></p>
+    <p class="sentence" id="sentence" role="status" aria-atomic="true"></p>
   </section>
 
   <section>
@@ -176,7 +180,10 @@ function mannKendall(x, y){
 }
 
 let DATA, cur, curVar='mean_radiance', chart;
-fetch('data/results.json').then(r=>r.json()).then(d=>{ DATA=d; init(); });
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+fetch('data/results.json').then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d=>{ DATA=d; document.getElementById('loading').remove(); init(); })
+  .catch(()=>{ document.getElementById('loading').textContent='Could not load the results. Please reload the page.'; });
 const verdictWord = v => v.significant ? (v.sen_slope_per_year>0?'increasing':'decreasing') : 'no significant trend';
 
 function init(){
@@ -222,13 +229,13 @@ function renderCases(){
   CASES.filter(c=>DATA.regions[c.region]).forEach(c=>{
     const b=document.createElement('button'); b.textContent=c.title;
     b.onclick=()=>{
-      document.querySelectorAll('#cases button').forEach(x=>x.classList.toggle('active',x===b));
+      document.querySelectorAll('#cases button').forEach(x=>{ x.classList.toggle('active',x===b); x.setAttribute('aria-pressed', x===b); });
       curVar=c.v; document.getElementById('var').value=c.v; renderTable(); select(c.region);
       if(c.from){ document.getElementById('y0').value=c.from; }
       if(c.to){ document.getElementById('y1').value=c.to; }
       if(c.from||c.to) update();
-      const t=document.getElementById('caseText'); t.style.display='block'; t.textContent='🕵️ '+c.text;
-      document.getElementById('chart').scrollIntoView({behavior:'smooth',block:'center'});
+      const t=document.getElementById('caseText'); t.style.display='block'; t.textContent=c.text;
+      document.getElementById('chart').scrollIntoView({behavior:REDUCED?'auto':'smooth',block:'center'});
     };
     box.appendChild(b);
   });
@@ -245,7 +252,8 @@ function renderTable(){
 
 function select(k){
   cur=k; const r=DATA.regions[k];
-  document.querySelectorAll('#regions button').forEach(b=>b.classList.toggle('active',b.dataset.k===k));
+  document.querySelectorAll('#regions button').forEach(b=>{ b.classList.toggle('active',b.dataset.k===k); b.setAttribute('aria-pressed', b.dataset.k===k); });
+  document.getElementById('map').alt=`Per-pixel trend map of ${r.label}: red pixels brightened significantly, blue pixels dimmed significantly, grey pixels show no significant trend`;
   const y0=document.getElementById('y0'), y1=document.getElementById('y1');
   y0.innerHTML=y1.innerHTML=r.years.map(y=>`<option>${y}</option>`).join('');
   y0.value=r.years[0]; y1.value=r.years[r.years.length-1];
@@ -271,13 +279,14 @@ function update(){
   document.getElementById('vPct').textContent=`${fmt(pct,1)}% / yr`;
   document.getElementById('vP').innerHTML=`${t.p<0.001?'< 0.001':t.p.toFixed(3)} <span class="pill ${t.p<0.05?'sig':'nsig'}">${t.p<0.05?'significant':'not significant'}</span>`;
   document.getElementById('sentence').innerHTML = t.p<0.05
-    ? `🕵️ Case closed: from ${x[0]} to ${x[x.length-1]}, <b>${V.label.toLowerCase()}</b> in <b>${r.label}</b> <b class="${cls}">${t.slope>0?'increased':'decreased'}</b> by about <b>${Math.abs(t.slope).toFixed(3)} ${U} per year</b> (${fmt(pct,1)}% per year). The Mann–Kendall p-value is ${t.p<0.001?'below 0.001':t.p.toFixed(3)}, so this trend is <b>statistically significant</b> at 95% confidence.`
-    : `🕵️ Not enough evidence: from ${x[0]} to ${x[x.length-1]}, <b>${V.label.toLowerCase()}</b> in <b>${r.label}</b> changed by ${fmt(t.slope,3)} ${U} per year, but the p-value (${t.p.toFixed(3)}) is above 0.05, so we <b>cannot rule out random variation</b>. Try a longer period.`;
+    ? `Case closed: from ${x[0]} to ${x[x.length-1]}, <b>${V.label.toLowerCase()}</b> in <b>${r.label}</b> <b class="${cls}">${t.slope>0?'increased':'decreased'}</b> by about <b>${Math.abs(t.slope).toFixed(3)} ${U} per year</b> (${fmt(pct,1)}% per year). The Mann–Kendall p-value is ${t.p<0.001?'below 0.001':t.p.toFixed(3)}, so this trend is <b>statistically significant</b> at 95% confidence.`
+    : `Not enough evidence: from ${x[0]} to ${x[x.length-1]}, <b>${V.label.toLowerCase()}</b> in <b>${r.label}</b> changed by ${fmt(t.slope,3)} ${U} per year, but the p-value (${t.p.toFixed(3)}) is above 0.05, so we <b>cannot rule out random variation</b>. Try a longer period.`;
+  document.getElementById('chart').setAttribute('aria-label', `Line chart of ${V.label.toLowerCase()} in ${r.label} from ${x[0]} to ${x[x.length-1]}, from ${y[0].toFixed(2)} to ${y[y.length-1].toFixed(2)} ${U}, with a Theil–Sen trend line`);
   const line=x.map(xx=>t.intercept+t.slope*xx);
   const cfg={type:'line',data:{labels:x,datasets:[
       {label:V.label,data:y,borderColor:'#f5b942',backgroundColor:'#f5b942',pointRadius:4,tension:0},
       {label:"Theil–Sen trend",data:line,borderColor:'#9aa5c4',borderDash:[6,5],pointRadius:0}]},
-    options:{maintainAspectRatio:false,plugins:{legend:{labels:{color:'#e8ecf8'}}},
+    options:{...(REDUCED?{animation:false}:{}),maintainAspectRatio:false,plugins:{legend:{labels:{color:'#e8ecf8'}}},
       scales:{x:{ticks:{color:'#9aa5c4'},grid:{color:'#2a3560'}},y:{title:{display:true,text:V.label+' ('+U+')',color:'#9aa5c4'},ticks:{color:'#9aa5c4'},grid:{color:'#2a3560'}}}}};
   if(chart){chart.data=cfg.data;chart.options=cfg.options;chart.update();} else chart=new Chart(document.getElementById('chart'),cfg);
 }
