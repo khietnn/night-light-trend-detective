@@ -7,7 +7,7 @@ Live tool: https://khietnn.github.io/night-light-trend-detective/
 Night Light Trend Detective helps students and the public investigate whether places are getting brighter or darker at night, **where** the change happens, **how much** it changes per year, and whether the change is **statistically significant**. It uses NASA's **Black Marble** night-light data (VIIRS Day/Night Band, 2012–2025).
 
 ## What it does
-1. **Select a region**: Ho Chi Minh City, Hanoi, or Con Dao Islands (Vietnam's main green sea-turtle nesting site).
+1. **Select a region**: Ho Chi Minh City, Hanoi, or the Binh Thuan dragon fruit farms, where fields are lit all night to make the plants flower out of season (agricultural light pollution).
 2. **Visualise the time series**: annual mean night-time radiance (nW/cm²/sr), 2012–2025.
 3. **Quantify the change**: Theil–Sen slope (units per year and % per year).
 4. **Test significance**: Mann–Kendall trend test (α = 0.05). Users can change the period and the test re-runs in the browser, which shows how significance depends on record length.
@@ -32,7 +32,7 @@ python scripts/analyze.py
 ```
 
 ## Data
-- NASA Black Marble VNP46A4 Collection 2 (annual night-time lights), layer `AllAngle_Composite_Snow_Free`, 15 arc-second grid, tiles h28v06, h28v07, h28v08. Source: NASA LAADS DAAC, https://ladsweb.modaps.eosdis.nasa.gov/missions-and-measurements/products/VNP46A4/
+- NASA Black Marble VNP46A4 Collection 2 (annual night-time lights), layer `AllAngle_Composite_Snow_Free`, 15 arc-second grid, tiles h28v06 and h28v07. Source: NASA LAADS DAAC, https://ladsweb.modaps.eosdis.nasa.gov/missions-and-measurements/products/VNP46A4/
 - Román, M.O. et al. (2018). NASA's Black Marble nighttime lights product suite. Remote Sensing of Environment, 210, 113–143.
 
 ## Limitations

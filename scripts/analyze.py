@@ -48,7 +48,7 @@ def main():
 
     for key, reg in REGIONS.items():
         years = sorted(int(p.stem.split("_")[-1]) for p in CLIP.glob(f"{key}_*.npy"))
-        if len(years) < 4:
+        if len(years) < 14:  # only publish regions with the full 2012-2025 record
             print(f"{key}: only {len(years)} years, skipped")
             continue
         stack = np.stack([np.load(CLIP / f"{key}_{y}.npy") for y in years])

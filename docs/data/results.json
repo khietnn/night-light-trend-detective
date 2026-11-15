@@ -155,6 +155,160 @@
      "percent_change_per_year": 9.873190032679627
     }
    }
+  },
+  "binhthuan": {
+   "label": "Binh Thuan dragon fruit farms",
+   "bbox": [
+    107.7,
+    10.75,
+    108.3,
+    11.3
+   ],
+   "years": [
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+   ],
+   "mean_radiance": [
+    28.421,
+    38.275,
+    41.011,
+    50.298,
+    41.287,
+    43.84,
+    56.353,
+    57.738,
+    47.531,
+    44.295,
+    28.623,
+    33.829,
+    34.393,
+    32.85
+   ],
+   "trend": "no trend",
+   "p_value": 0.9128140271840748,
+   "significant": false,
+   "sen_slope_per_year": -0.4446125030517578,
+   "percent_change_per_year": -1.0755338604010722,
+   "pixels_brightening_pct": 41.456228956228955,
+   "pixels_dimming_pct": 6.3604797979797985,
+   "variables": {
+    "mean_radiance": {
+     "label": "Average night-time brightness",
+     "unit": "nW/cm\u00b2/sr",
+     "desc": "Mean radiance of all pixels in the region.",
+     "values": [
+      28.4208,
+      38.2747,
+      41.0108,
+      50.2979,
+      41.2871,
+      43.8399,
+      56.3527,
+      57.7382,
+      47.5313,
+      44.2954,
+      28.6229,
+      33.8286,
+      34.3926,
+      32.85
+     ],
+     "trend": "no trend",
+     "p_value": 0.9128140271840748,
+     "significant": false,
+     "sen_slope_per_year": -0.4446125030517578,
+     "percent_change_per_year": -1.0755338604010722
+    },
+    "lit_area": {
+     "label": "Lit area",
+     "unit": "% of region",
+     "desc": "Share of pixels brighter than 5.0 nW/cm\u00b2/sr: a proxy for how far lights spread (urban sprawl).",
+     "values": [
+      23.8531,
+      32.9703,
+      33.528,
+      38.3838,
+      39.3887,
+      38.8152,
+      44.4602,
+      44.9442,
+      42.7767,
+      40.8249,
+      35.806,
+      41.0196,
+      40.1252,
+      39.0099
+     ],
+     "trend": "no trend",
+     "p_value": 0.06269811626098254,
+     "significant": false,
+     "sen_slope_per_year": 0.5032968574635243,
+     "percent_change_per_year": 1.3148120878941083
+    },
+    "core": {
+     "label": "Brightness of established bright areas",
+     "unit": "nW/cm\u00b2/sr",
+     "desc": "Mean radiance of pixels that were already in the brightest 10% in 2012 (old centres, ports, industry).",
+     "values": [
+      243.2109,
+      309.3182,
+      321.2501,
+      373.8387,
+      287.4727,
+      290.6397,
+      356.9703,
+      362.0251,
+      289.3801,
+      264.1863,
+      164.2556,
+      188.1755,
+      191.1208,
+      181.9917
+     ],
+     "trend": "decreasing",
+     "p_value": 0.0487449207397066,
+     "significant": true,
+     "sen_slope_per_year": -10.610541025797525,
+     "percent_change_per_year": -3.884779078876395
+    },
+    "fringe": {
+     "label": "Brightness of areas that were dark",
+     "unit": "nW/cm\u00b2/sr",
+     "desc": "Mean radiance of pixels that were in the darkest 50% in 2012 (rural land, new suburbs, sea).",
+     "values": [
+      0.347,
+      0.604,
+      0.776,
+      1.0418,
+      1.2402,
+      1.1477,
+      1.8108,
+      1.9356,
+      1.7483,
+      1.5337,
+      1.2398,
+      1.9241,
+      1.741,
+      1.6409
+     ],
+     "trend": "increasing",
+     "p_value": 0.00859504637602404,
+     "significant": true,
+     "sen_slope_per_year": 0.10336995666677301,
+     "percent_change_per_year": 7.726196281375561
+    }
+   }
   }
  }
 }

@@ -116,7 +116,7 @@ footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
 
   <section>
     <h2>Why night lights matter</h2>
-    <p class="muted">Artificial light at night disorients sea-turtle hatchlings that crawl toward the brightest horizon (Con Dao is Vietnam's main green-turtle nesting site), disrupts migrating birds and insects, affects human sleep and health, wastes energy and hides the stars. Night lights are also a direct footprint of urban growth and electrification, so trends tell us where and how fast human activity is changing.</p>
+    <p class="muted">Artificial light at night disrupts nocturnal insects, birds and other wildlife, affects human sleep and health, wastes energy and hides the stars. In Vietnam it does not only come from cities: in Binh Thuan, farmers keep millions of bulbs on in dragon fruit fields at night so the plants flower out of season, which makes farmland glow as brightly as a town. Night lights are a direct footprint of urban growth, electrification and farming practices, so their trends show where and how fast human activity is changing.</p>
   </section>
 
   <section>
@@ -189,8 +189,14 @@ const CASES = [
    text:'Areas that were dark in 2012 versus areas that were already bright. Switch the variable between the two and compare the % per year.'},
   {title:'Case 5: Two cities, one variable', region:'hanoi', v:'mean_radiance',
    text:'Now Hanoi. Use the comparison table to see whether the same variable trends the same way in both cities.'},
-  {title:'Case 6: Light near sea-turtle beaches', region:'condao', v:'mean_radiance',
-   text:'Con Dao Islands host Vietnam\'s main green-turtle nesting beaches. Is artificial light here increasing, and is the change significant?'},
+  {title:'Case 6: Farms that light up the night', region:'binhthuan', v:'mean_radiance',
+   text:'Binh Thuan farmers light dragon fruit fields at night to make the plants flower out of season, so this light pollution comes from agriculture, not cities. Over 2012–2025 the test finds no significant trend. Look at the curve: a steady line is not the only story data can tell.'},
+  {title:'Case 7: The dragon fruit boom', region:'binhthuan', v:'mean_radiance', from:2012, to:2019,
+   text:'Only 2012–2019: farm lighting grew fast and the trend is significant. A trend test answers "is there a consistent direction in this window?", so the window you choose matters.'},
+  {title:'Case 8: …and the bust?', region:'binhthuan', v:'mean_radiance', from:2019, to:2025,
+   text:'Since 2019 brightness fell sharply (note the drop in 2022), but with only 7 years the decline is not yet significant. A possible explanation to investigate: lower dragon fruit prices and exports, fewer lit fields, and switching to LED bulbs that the satellite sees less well.'},
+  {title:'Case 9: Opposite trends, one region', region:'binhthuan', v:'core',
+   text:'The brightest farm areas of 2012 got significantly dimmer, while areas that were dark got significantly brighter. Switch the variable to "areas that were dark" and compare, then look at the blue and red patches on the map.'},
 ];
 
 function renderCases(){
@@ -200,7 +206,9 @@ function renderCases(){
     b.onclick=()=>{
       document.querySelectorAll('#cases button').forEach(x=>x.classList.toggle('active',x===b));
       curVar=c.v; document.getElementById('var').value=c.v; renderTable(); select(c.region);
-      if(c.from){ document.getElementById('y0').value=c.from; update(); }
+      if(c.from){ document.getElementById('y0').value=c.from; }
+      if(c.to){ document.getElementById('y1').value=c.to; }
+      if(c.from||c.to) update();
       const t=document.getElementById('caseText'); t.style.display='block'; t.textContent='🕵️ '+c.text;
       document.getElementById('chart').scrollIntoView({behavior:'smooth',block:'center'});
     };
